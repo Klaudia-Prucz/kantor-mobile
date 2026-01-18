@@ -1,24 +1,51 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { Stack, usePathname, useRouter, useSegments } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { getToken } from "../src/api";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const router = useRouter();
+  const segments = useSegments();
+  const pathname = usePathname();
+
+  const [checking, setChecking] = useState(true);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  const refreshAuth = useCallback(async () => {
+    const t = await getToken();
+    setIsAuthed(Boolean(t));
+    setChecking(false);
+  }, []);
+
+  // start
+  useEffect(() => {
+    refreshAuth();
+  }, [refreshAuth]);
+
+  // ważne: odświeżaj przy każdej zmianie ścieżki (login/logout)
+  useEffect(() => {
+    refreshAuth();
+  }, [pathname, refreshAuth]);
+
+  useEffect(() => {
+    if (checking) return;
+
+    const inProtectedGroup = segments.includes("(app)");
+
+    if (!isAuthed && inProtectedGroup) router.replace("/");
+    if (isAuthed && !inProtectedGroup) router.replace("/(app)/home");
+  }, [checking, isAuthed, segments, router]);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      {checking ? (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator />
+        </View>
+      ) : (
+        <Stack screenOptions={{ headerShown: false }} />
+      )}
+    </SafeAreaProvider>
   );
 }
