@@ -63,8 +63,8 @@ export default function ExchangeTab() {
   // SELL = sprzedaj walutę za PLN (X -> PLN)
   const [mode, setMode] = useState<"BUY" | "SELL">("BUY");
 
-  const [currency, setCurrency] = useState("EUR"); // waluta kupowana / sprzedawana
-  const [amountText, setAmountText] = useState("10"); // ✅ amount zawsze w WALUCIE (EUR/USD/...)
+  const [currency, setCurrency] = useState("EUR");
+  const [amountText, setAmountText] = useState("10");
   const amount = useMemo(() => parseAmount(amountText), [amountText]);
 
   const balancesList = useMemo(
@@ -86,13 +86,9 @@ export default function ExchangeTab() {
 
   const ratePLN = useMemo(() => {
     const r = rates?.rates?.[currency];
-    return typeof r === "number" && Number.isFinite(r) ? r : null; // PLN za 1 jednostkę waluty
+    return typeof r === "number" && Number.isFinite(r) ? r : null;
   }, [rates, currency]);
 
-  // ✅ Quote:
-  // BUY: costPLN = amount(currency) * ratePLN
-  // SELL: gainPLN = amount(currency) * ratePLN
-  // (backend policzy finalnie po buyRate/sellRate, to jest orientacyjne)
   const plnValue = useMemo(() => {
     if (!ratePLN) return null;
     if (amount <= 0) return null;
@@ -105,12 +101,10 @@ export default function ExchangeTab() {
     if (amount <= 0) return false;
 
     if (mode === "BUY") {
-      // ✅ w BUY sprawdzamy PLN: czy stać nas na koszt
       if ((plnValue ?? 0) > plnBalance + 1e-9) return false;
       return true;
     }
 
-    // SELL: sprawdzamy saldo waluty
     if (amount > curBalance + 1e-9) return false;
     return true;
   }, [wallet, rates, ratePLN, amount, mode, plnBalance, curBalance, plnValue]);
@@ -154,13 +148,11 @@ export default function ExchangeTab() {
     }, [loadWallet])
   );
 
-  // Jeśli zmienisz walutę / tryb, a amountText było "100" (Twoje stare), zostawiamy,
-  // ale ustawiamy sensownie domyślną kwotę w walucie.
   useEffect(() => {
     if (!amountText || parseAmount(amountText) <= 0) {
       setAmountText("10");
     }
-  }, [currency, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currency, mode]);
 
   const submit = async () => {
     if (!rates) return Alert.alert("Brak kursów", "Najpierw pobierz kursy.");
@@ -182,8 +174,8 @@ export default function ExchangeTab() {
 
     const msg =
       mode === "BUY"
-        ? `Kupujesz ${currency} za PLN\n\nKupujesz: ${formatMoney(amount)} ${currency}\nSzacowany koszt: ${approxPLN} PLN\nKurs (orient.): 1 ${currency} = ${ratePLN} PLN\nData kursów: ${rates.date}\n\n*Finalny kurs i koszt wyliczy backend (buyRate).`
-        : `Sprzedajesz ${currency} za PLN\n\nSprzedajesz: ${formatMoney(amount)} ${currency}\nSzacowany zysk: ${approxPLN} PLN\nKurs (orient.): 1 ${currency} = ${ratePLN} PLN\nData kursów: ${rates.date}\n\n*Finalny kurs i zysk wyliczy backend (sellRate).`;
+        ? `Kupujesz ${currency} za PLN\n\nKupujesz: ${formatMoney(amount)} ${currency}\nSzacowany koszt: ${approxPLN} PLN\nKurs (orient.): 1 ${currency} = ${ratePLN} PLN\nData kursów: ${rates.date}`
+        : `Sprzedajesz ${currency} za PLN\n\nSprzedajesz: ${formatMoney(amount)} ${currency}\nSzacowany zysk: ${approxPLN} PLN\nKurs (orient.): 1 ${currency} = ${ratePLN} PLN\nData kursów: ${rates.date}`;
 
     Alert.alert("Potwierdź", msg, [
       { text: "Anuluj", style: "cancel" },
@@ -193,7 +185,6 @@ export default function ExchangeTab() {
           try {
             setSubmitting(true);
 
-            // ✅ backend oczekuje: { currency, amount } gdzie amount to ILOŚĆ WALUTY
             if (mode === "BUY") {
               await apiExchangeBuy(currency, amount);
             } else {
@@ -254,8 +245,8 @@ export default function ExchangeTab() {
 
             <Text style={{ opacity: 0.65 }}>
               {mode === "BUY"
-                ? "BUY: podajesz ilość waluty, którą chcesz kupić. System policzy koszt w PLN."
-                : "SELL: podajesz ilość waluty, którą chcesz sprzedać. System policzy ile PLN dostaniesz."}
+                ? "BUY: podajesz ilość waluty, którą chcesz kupić."
+                : "SELL: podajesz ilość waluty, którą chcesz sprzedać."}
             </Text>
           </Card>
 
@@ -320,9 +311,7 @@ export default function ExchangeTab() {
                 Dostępne: {formatMoney(plnBalance)} PLN • {formatMoney(curBalance)} {currency}
               </Text>
 
-              <Text style={{ opacity: 0.7, fontWeight: "800" }}>
-                Kwota ({currency}) {/* ✅ zawsze w walucie */}
-              </Text>
+              <Text style={{ opacity: 0.7, fontWeight: "800" }}>Kwota ({currency})</Text>
 
               <TextInput
                 value={amountText}
@@ -375,14 +364,18 @@ export default function ExchangeTab() {
               <Text style={{ opacity: 0.6 }}>Wpisz kwotę, aby policzyć wycenę.</Text>
             ) : (
               <>
-                <Text style={{ fontWeight: "900" }}>Kurs: 1 {currency} = {ratePLN} PLN</Text>
+                <Text style={{ fontWeight: "900" }}>
+                  Kurs: 1 {currency} = {ratePLN} PLN
+                </Text>
                 <View style={{ height: 1, backgroundColor: "#E5E7EB", marginTop: 8 }} />
 
                 {mode === "BUY" ? (
                   <>
                     <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                       <Text style={{ opacity: 0.7 }}>Kupujesz</Text>
-                      <Text style={{ fontWeight: "900" }}>{formatMoney(amount)} {currency}</Text>
+                      <Text style={{ fontWeight: "900" }}>
+                        {formatMoney(amount)} {currency}
+                      </Text>
                     </View>
                     <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                       <Text style={{ opacity: 0.7 }}>Szacowany koszt</Text>
@@ -393,18 +386,16 @@ export default function ExchangeTab() {
                   <>
                     <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                       <Text style={{ opacity: 0.7 }}>Sprzedajesz</Text>
-                      <Text style={{ fontWeight: "900" }}>{formatMoney(amount)} {currency}</Text>
+                      <Text style={{ fontWeight: "900" }}>
+                        {formatMoney(amount)} {currency}
+                      </Text>
                     </View>
                     <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                      <Text style={{ opacity: 0.7 }}>Szacowany zysk</Text>
+                      <Text style={{ opacity: 0.7 }}>Wartość zysku</Text>
                       <Text style={{ fontWeight: "900" }}>{plnValue != null ? formatMoney(plnValue) : "—"} PLN</Text>
                     </View>
                   </>
                 )}
-
-                <Text style={{ opacity: 0.6, marginTop: 6 }}>
-                  Finalne wartości policzy backend (BUY: buyRate, SELL: sellRate).
-                </Text>
               </>
             )}
           </Card>
