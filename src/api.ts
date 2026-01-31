@@ -112,3 +112,31 @@ export function apiWalletDeposit(amountPLN: number) {
   });
 }
 
+export function apiExchangeBuy(currency: string, amount: number) {
+  const code = String(currency ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, ""); // usuwa niewidzialne znaki
+
+  const payload = { currency: code, amount: Number(amount) };
+
+  console.log("[EXCHANGE BUY payload]", payload, "types:", typeof payload.currency, typeof payload.amount);
+
+  return request("/exchange/buy", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+
+export function apiExchangeSell(currency: string, amount: number) {
+  const code = String(currency ?? "").trim().toUpperCase();
+
+  return request("/exchange/sell", {
+    method: "POST",
+    body: JSON.stringify({ currency: code, amount }),
+  });
+}
+export function apiTransactionsMe() {
+  return request("/transactions/me");
+}

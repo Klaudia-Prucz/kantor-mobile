@@ -41,11 +41,21 @@ export default function HomeTab() {
   const [loadingRates, setLoadingRates] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
 
-  const balancesList = useMemo(() => (wallet?.balances ?? []).sort((a, b) => a.currency.localeCompare(b.currency)), [wallet]);
-  const ratesList = useMemo(() => (rates?.rates ? Object.entries(rates.rates).map(([c, v]) => ({ c, v })).sort((a, b) => a.c.localeCompare(b.c)) : []), [rates]);
+  const balancesList = useMemo(
+    () => (wallet?.balances ?? []).slice().sort((a, b) => a.currency.localeCompare(b.currency)),
+    [wallet]
+  );
+
+  const ratesList = useMemo(
+    () => (rates?.rates ? Object.entries(rates.rates).map(([c, v]) => ({ c, v })).sort((a, b) => a.c.localeCompare(b.c)) : []),
+    [rates]
+  );
 
   const loadWallet = useCallback(async () => {
     try {
+      const w = (await apiWalletMe()) as any;
+console.log("[WALLET RAW]", w);
+setWallet(w);
       setLoadingWallet(true);
       setWallet((await apiWalletMe()) as any);
     } catch (e: any) {
@@ -68,18 +78,21 @@ export default function HomeTab() {
     }
   }, []);
 
-  const loadRatesForDate = useCallback(async (ymd: string) => {
-    if (!isValidYMD(ymd)) return Alert.alert("Niepoprawna data", "Format YYYY-MM-DD, np. 2026-01-16.");
-    try {
-      setLoadingRates(true);
-      setRates((await apiRatesByDate(ymd)) as any);
-      setSelectedDate(ymd);
-    } catch (e: any) {
-      Alert.alert("Brak kursów", e?.message ?? "Nie udało się pobrać kursów dla tej daty");
-    } finally {
-      setLoadingRates(false);
-    }
-  }, []);
+  const loadRatesForDate = useCallback(
+    async (ymd: string) => {
+      if (!isValidYMD(ymd)) return Alert.alert("Niepoprawna data", "Format YYYY-MM-DD, np. 2026-01-16.");
+      try {
+        setLoadingRates(true);
+        setRates((await apiRatesByDate(ymd)) as any);
+        setSelectedDate(ymd);
+      } catch (e: any) {
+        Alert.alert("Brak kursów", e?.message ?? "Nie udało się pobrać kursów dla tej daty");
+      } finally {
+        setLoadingRates(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     loadWallet();
@@ -101,7 +114,9 @@ export default function HomeTab() {
           <Card title="Stan konta">
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
               <Text style={{ opacity: 0.7 }}>Saldo PLN</Text>
-              <Text style={{ fontSize: 22, fontWeight: "900" }}>{wallet ? `${formatMoneyPLN(wallet.balancePLN)} PLN` : "—"}</Text>
+              <Text style={{ fontSize: 22, fontWeight: "900" }}>
+                {wallet ? `${formatMoneyPLN(wallet.balancePLN)} PLN` : "—"}
+              </Text>
             </View>
 
             <View style={{ height: 1, backgroundColor: "#E5E7EB" }} />
@@ -120,6 +135,7 @@ export default function HomeTab() {
               </View>
             )}
 
+            {/* ✅ PRZYCISKI */}
             <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
               <Pressable
                 onPress={() => router.push("/(app)/(tabs)/deposit")}
@@ -129,13 +145,22 @@ export default function HomeTab() {
               </Pressable>
 
               <Pressable
-                onPress={() => Alert.alert("Wkrótce", "Następny krok: kup walutę.")}
-                style={{ flex: 1, paddingVertical: 12, borderRadius: 14, alignItems: "center", backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" }}
+                onPress={() => router.push("/(app)/(tabs)/exchange")}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 14,
+                  alignItems: "center",
+                  backgroundColor: "#fff",
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
+                }}
               >
                 <Text style={{ fontWeight: "900" }}>Kup walutę</Text>
               </Pressable>
             </View>
 
+            {/* ✅ ODŚWIEŻ */}
             <Pressable onPress={loadWallet} disabled={loadingWallet} style={{ marginTop: 8, alignSelf: "flex-start" }}>
               <Text style={{ fontWeight: "900", opacity: loadingWallet ? 0.5 : 0.7 }}>
                 {loadingWallet ? "Odświeżanie..." : "Odśwież portfel"}
@@ -153,7 +178,15 @@ export default function HomeTab() {
               <Pressable
                 onPress={() => selectedDate && loadRatesForDate(addDays(selectedDate, -1))}
                 disabled={loadingRates}
-                style={{ paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#fff", opacity: loadingRates ? 0.6 : 1 }}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
+                  backgroundColor: "#fff",
+                  opacity: loadingRates ? 0.6 : 1,
+                }}
               >
                 <Text style={{ fontWeight: "900" }}>◀︎</Text>
               </Pressable>
@@ -164,14 +197,28 @@ export default function HomeTab() {
                   onChangeText={setSelectedDate}
                   placeholder="YYYY-MM-DD"
                   placeholderTextColor="#9CA3AF"
-                  style={{ borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: "#fff", fontWeight: "800" }}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#E5E7EB",
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    backgroundColor: "#fff",
+                    fontWeight: "800",
+                  }}
                 />
               </View>
 
               <Pressable
                 onPress={() => loadRatesForDate(selectedDate)}
                 disabled={loadingRates}
-                style={{ paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, backgroundColor: "#111827", opacity: loadingRates ? 0.6 : 1 }}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: 12,
+                  backgroundColor: "#111827",
+                  opacity: loadingRates ? 0.6 : 1,
+                }}
               >
                 <Text style={{ fontWeight: "900", color: "#fff" }}>OK</Text>
               </Pressable>
@@ -179,17 +226,21 @@ export default function HomeTab() {
               <Pressable
                 onPress={() => selectedDate && loadRatesForDate(addDays(selectedDate, 1))}
                 disabled={loadingRates}
-                style={{ paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#fff", opacity: loadingRates ? 0.6 : 1 }}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
+                  backgroundColor: "#fff",
+                  opacity: loadingRates ? 0.6 : 1,
+                }}
               >
                 <Text style={{ fontWeight: "900" }}>▶︎</Text>
               </Pressable>
             </View>
 
-            <Pressable
-              onPress={loadRatesLatest}
-              disabled={loadingRates}
-              style={{ marginTop: 8, alignSelf: "flex-start" }}
-            >
+            <Pressable onPress={loadRatesLatest} disabled={loadingRates} style={{ marginTop: 8, alignSelf: "flex-start" }}>
               <Text style={{ fontWeight: "900", opacity: loadingRates ? 0.5 : 0.7 }}>
                 {loadingRates ? "Ładowanie..." : "Pokaż najnowsze"}
               </Text>
@@ -201,7 +252,15 @@ export default function HomeTab() {
               {ratesList.map((x) => (
                 <View
                   key={x.c}
-                  style={{ width: "48%", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 14, padding: 12, backgroundColor: "#fff", gap: 6 }}
+                  style={{
+                    width: "48%",
+                    borderWidth: 1,
+                    borderColor: "#E5E7EB",
+                    borderRadius: 14,
+                    padding: 12,
+                    backgroundColor: "#fff",
+                    gap: 6,
+                  }}
                 >
                   <Text style={{ fontSize: 12, opacity: 0.6, fontWeight: "800" }}>Waluta</Text>
                   <Text style={{ fontSize: 18, fontWeight: "900" }}>{x.c}</Text>

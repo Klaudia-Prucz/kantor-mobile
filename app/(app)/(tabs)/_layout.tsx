@@ -9,7 +9,7 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarShowLabel: true,
         tabBarIcon: ({ focused, size, color }) => {
-          // Expo sam podaje color/size, ale możesz je zostawić jak są
+
           const iconSize = size ?? 22;
 
           let name: keyof typeof Ionicons.glyphMap = "home";
@@ -27,6 +27,14 @@ export default function TabsLayout() {
       <Tabs.Screen name="deposit" options={{ title: "Zasil konto" }} />
       <Tabs.Screen name="history" options={{ title: "Historia" }} />
       <Tabs.Screen name="rates" options={{ title: "Kursy" }} />
+      <Tabs.Screen
+  name="exchange"
+  options={{
+    title: "Exchange",
+    href: null,  
+  }}
+/>
+
     </Tabs>
   );
 }
