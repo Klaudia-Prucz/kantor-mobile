@@ -158,12 +158,6 @@ export default function HistoryTab() {
           ))}
 
           <View style={{ flex: 1 }} />
-
-          <Pressable onPress={load} disabled={loading} style={{ paddingVertical: 8, paddingHorizontal: 10 }}>
-            <Text style={{ fontWeight: "900", opacity: loading ? 0.5 : 0.7 }}>
-              {loading ? "Ładowanie…" : "Odśwież"}
-            </Text>
-          </Pressable>
         </View>
 
         {loading && items.length === 0 ? (

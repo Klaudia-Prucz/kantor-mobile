@@ -21,8 +21,12 @@ export async function clearToken() {
 }
 
 // ===== REQUEST CORE =====
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const token = await getToken();
+  if (!token && path !== "/auth/login" && path !== "/auth/register") {
+    // Po wylogowaniu nie rzucaj błędu, tylko zwróć null
+    return null;
+  }
   console.log("[REQ]", path, "hasToken?", !!token);
 
   const res = await fetch(`${API_URL}${path}`, {
@@ -83,11 +87,20 @@ export async function apiLogin(email: string, password: string) {
   return res;
 }
 
-export function apiRegister(email: string, password: string) {
-  console.log("[REGISTER]", email);
+export function apiRegister(
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string
+) {
   return request("/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({
+      email,
+      password,
+      firstName,
+      lastName,
+    }),
   });
 }
 
